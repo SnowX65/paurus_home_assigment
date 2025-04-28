@@ -64,7 +64,19 @@ The trader always chooses the taxation type that provides the **best possible re
 - With rate taxMethod: `7.5 - (2.5 * 0.1) = 7.25` (best possible return amount after tax)
 - With amount taxMethod: `7.5 - (2.5 - 2) = 5.5`
 
-   
+### DB Schema
+
+The application uses an in-memory H2 database
+
+#### ALLOWED_COUNTRY_NAMES: 
+- Stores a list of allowed country names.
+#### COUNTRY
+- Represents a country that traders can belong to.
+#### TRADER
+- Represents a trader belonging to a specific country
+
+![img.png](img.png)
+
 ### API Endpoints
 
 #### 1. Country API (/api/countries)
