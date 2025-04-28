@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
-        return new com.home.codingassignment.task1.entity.ResponseHandler()
+        return new ResponseHandler()
                 .setSuccessful(false)
                 .setStatus(HttpStatus.BAD_REQUEST)
                 .setMessage("Parameter validation failed")
@@ -62,10 +62,12 @@ public class GlobalExceptionHandler {
                 userFriendlyMessage = "Invalid reference to another entity (foreign key violation)";
             } else if (rootMessage.toLowerCase().contains("not null")) {
                 userFriendlyMessage = "Required field is missing (null value not allowed)";
+            } else if (rootMessage.toLowerCase().contains("already exists")) {
+                userFriendlyMessage = rootMessage;
             }
         }
 
-        return new com.home.codingassignment.task1.entity.ResponseHandler()
+        return new ResponseHandler()
                 .setSuccessful(false)
                 .setStatus(HttpStatus.CONFLICT)
                 .setMessage(userFriendlyMessage)
@@ -77,7 +79,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Object> handleNoSuchElementException(NoSuchElementException ex) {
 
-        return new com.home.codingassignment.task1.entity.ResponseHandler()
+        return new ResponseHandler()
                 .setSuccessful(false)
                 .setStatus(HttpStatus.NOT_FOUND)
                 .setMessage(ex.getMessage())
@@ -89,7 +91,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SQLException.class)
     public ResponseEntity<Object> handleSqlException(SQLException ex) {
 
-        return new com.home.codingassignment.task1.entity.ResponseHandler()
+        return new ResponseHandler()
                 .setSuccessful(false)
                 .setStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                 .setMessage("SQL error: " + ex.getMessage())
@@ -101,7 +103,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex) {
 
-        return new com.home.codingassignment.task1.entity.ResponseHandler()
+        return new ResponseHandler()
                 .setSuccessful(false)
                 .setStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                 .setMessage("An unexpected error occurred: " + ex.getMessage())

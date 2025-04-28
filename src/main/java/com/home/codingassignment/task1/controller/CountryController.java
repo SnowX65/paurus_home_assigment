@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("api/countries")
@@ -69,7 +70,6 @@ public class CountryController {
     @PostMapping("/createCountry")
     public ResponseEntity<Object> returnPossibleReturnAmount(@RequestBody @Validated(CountryDto.OnCreate.class) CountryDto countryDto) {
 
-
         // checks that at least one of taxRate or taxAmount have a value
         if(countryDto.getTaxRate() == null && countryDto.getTaxAmount() == null) {
             return new ResponseHandler()
@@ -119,23 +119,22 @@ public class CountryController {
                 .orElseThrow(() -> new NoSuchElementException("Country with id " + id + " not found."));
 
         if (countryDto.getName() != null) {
-
             responseHandler.setWarnings("The 'name' field was provided but not updated.");
         }
 
-        if (countryDto.getTaxRateIsIncluded().equals(Boolean.TRUE)) {
+        if (countryDto.taxRateIsIncluded() && !Objects.equals(countryDto.getTaxRate(), country.getTaxRate())) {
             country.setTaxRate(countryDto.getTaxRate());
         }
-        if (countryDto.getTaxAmountIsIncluded().equals(Boolean.TRUE)) {
+        if (countryDto.taxAmountIsIncluded() && !Objects.equals(countryDto.getTaxAmount(), country.getTaxAmount())) {
             country.setTaxAmount(countryDto.getTaxAmount());
         }
-        if (countryDto.getTaxRate() != null) {
+        if (!countryDto.taxTypeIsEmpty() && !Objects.equals(countryDto.getTaxType(), country.getTaxType())) {
             country.setTaxType(countryDto.getTaxType());
         }
 
-        // validates that either tax_rate or tax_amount is present, but not both missing
+        // validates that one of tax_rate or tax_amount is present
         if (country.getTaxRate() == null && country.getTaxAmount() == null &&
-            countryDto.getTaxRateIsIncluded().equals(Boolean.TRUE) && countryDto.getTaxAmountIsIncluded().equals(Boolean.TRUE)) {
+            countryDto.taxRateIsIncluded() && countryDto.taxAmountIsIncluded()) {
 
             return new ResponseHandler()
                         .setStatus(HttpStatus.CONFLICT)

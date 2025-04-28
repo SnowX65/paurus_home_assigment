@@ -9,11 +9,18 @@ import com.home.codingassignment.task1.model.BetEstimateResponseDto;
 import com.home.codingassignment.task1.entity.Trader;
 import com.home.codingassignment.task1.repository.CountryRepository;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("api/traders")
@@ -45,8 +52,11 @@ public class TraderController {
     @GetMapping("/{id}")
     public ResponseEntity<Object> getTrader(@PathVariable Long id) {
 
+        Trader trader = traderRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Trader with id " + id + " not found."));
+
         return new ResponseHandler()
-                .setData(traderRepository.findById(id))
+                .setData(trader)
                 .generateResponse();
     }
 
@@ -65,7 +75,7 @@ public class TraderController {
 
         // check if a trader with that name already exists in this country
         if(traderRepository.findByNameAndCountry(traderDto.getName(), country.getId()).isPresent()) {
-            throw new NoSuchElementException("Trader with name " + traderDto.getName() + " already exists in country with id: " + traderDto.getCountryId());
+            throw new DataIntegrityViolationException("Trader with name " + traderDto.getName() + " already exists in country with id: " + traderDto.getCountryId());
         }
 
         Trader trader = new Trader()
@@ -97,17 +107,17 @@ public class TraderController {
 
         Country country = new Country();
 
-        if (traderDto.getCountryId() != null) {
+        if (traderDto.getCountryId() != null && !Objects.equals(trader.getCountry().getId(), traderDto.getCountryId())) {
             country = countryRepository.findById(traderDto.getCountryId())
                     .orElseThrow(() -> new NoSuchElementException("Country with id " + traderDto.getCountryId() + " not found."));
             trader.setCountry(country);
         }
 
-        if (traderDto.getName() != null) {
+        if (traderDto.getName() != null && !Objects.equals(traderDto.getName(), trader.getName())) {
 
             // check if a trader with that name already exists in this country
             if(traderRepository.findByNameAndCountry(traderDto.getName(), country.getId()).isPresent()) {
-                throw new NoSuchElementException("Trader with name " + traderDto.getName() + " already exists in country with id: " + traderDto.getCountryId());
+                throw new DataIntegrityViolationException("Trader with name " + traderDto.getName() + " already exists in country with id: " + traderDto.getCountryId());
             }
 
             trader.setName(traderDto.getName());
@@ -168,26 +178,25 @@ public class TraderController {
 
         // checks if the trader exists
         Trader trader = traderRepository.findById(betEstimateDto.getTraderId())
-                .orElseThrow(() -> new NoSuchElementException("Trader with id" + betEstimateDto.getTraderId().toString() + " not found"));
+                .orElseThrow(() -> new NoSuchElementException("Trader with id " + betEstimateDto.getTraderId().toString() + " not found"));
 
         //calculate the best possible return amount before and after tax
-        BetEstimateResponseDto betEstimateResponseDto = getBestPossibleReturnAmountAfterTax(trader, betEstimateDto.getPlayedAmount(), betEstimateDto.getOdd());
-
-        return new ResponseHandler()
-                .setData(betEstimateResponseDto)
-                .generateResponse();
+        return getBestPossibleReturnAmountAfterTax(trader, betEstimateDto.getPlayedAmount(), betEstimateDto.getOdd());
 
     }
 
-    private BetEstimateResponseDto getBestPossibleReturnAmountAfterTax(Trader trader, Double playedAmount, Double odd){
+    private ResponseEntity<Object> getBestPossibleReturnAmountAfterTax(Trader trader, Double playedAmount, Double odd){
 
         //initialize the return object
         BetEstimateResponseDto betEstimateResponseDto = new BetEstimateResponseDto();
 
-        double amountToBeTaxed = 0;
+        double amountToBeTaxed = 0; // amount that needs to be taxed
         double possibleReturnAmountAfterTax = 0;
         double possibleReturnAmountBefTax = playedAmount*odd;
-        String taxationType = ""; // which taxation type was chosen by the trader - rate or amount
+        double winnings = possibleReturnAmountBefTax - playedAmount;
+        String taxationMethod = ""; // which taxation type was chosen by the trader - rate or amount
+
+        double taxationAmount = 0.0; // amount of tax needed to be paid
 
         //Depending on the taxation type we set the amount to be taxed
         if(trader.getCountry().getTaxType() == 'G'){
@@ -196,23 +205,23 @@ public class TraderController {
 
         } else if (trader.getCountry().getTaxType() == 'W'){
 
-            amountToBeTaxed = possibleReturnAmountBefTax - playedAmount;
+            amountToBeTaxed = winnings;
         }
 
         Double totalTax_rateMethod = null;
         Double totalTax_amountMethod = null;
-
+        
         // first we need to select the best taxation type depending on what the country supports
         // if it supports both types we select the type that brings the player the biggest possible return amount after tax
-        if (trader.getCountry().getTaxAmount() == null){
+        if (trader.getCountry().getTaxRate() != null && trader.getCountry().getTaxAmount() == null) {
 
-            taxationType = "rate";
-            totalTax_rateMethod = amountToBeTaxed * trader.getCountry().getTaxRate();
+            taxationMethod = "rate";
+            taxationAmount = amountToBeTaxed * trader.getCountry().getTaxRate();
 
-        } else if (trader.getCountry().getTaxRate() == null){
+        }  else if (trader.getCountry().getTaxAmount() != null && trader.getCountry().getTaxRate() == null) {
 
-            taxationType = "amount";
-            totalTax_amountMethod = amountToBeTaxed - trader.getCountry().getTaxAmount();
+            taxationMethod = "amount";
+            taxationAmount = trader.getCountry().getTaxAmount();
 
         } else {
 
@@ -221,34 +230,64 @@ public class TraderController {
 
             if (totalTax_amountMethod < totalTax_rateMethod) {
 
-                taxationType = "amount";
+                taxationMethod = "amount";
+                taxationAmount = totalTax_amountMethod;
 
             } else {
 
-                taxationType = "rate";
+                taxationMethod = "rate";
+                taxationAmount = totalTax_rateMethod;
+
             }
 
         }
 
-        if (taxationType.equals("amount")) {
+        //
+        if (trader.getCountry().getTaxType() == 'W' && taxationAmount > winnings) {
+            return betIsTooSmall(winnings, taxationAmount, trader.getCountry().getTaxType());
 
-            //calculate the possible return after tax with the amount method
-            possibleReturnAmountAfterTax = possibleReturnAmountBefTax - totalTax_amountMethod;
-
-            betEstimateResponseDto.setTaxAmount(trader.getCountry().getTaxAmount());
-
-        } else {
-
-            //calculate the possible return after tax with the rate method
-            possibleReturnAmountAfterTax = possibleReturnAmountBefTax - totalTax_rateMethod;
-
-            betEstimateResponseDto.setTaxRate(trader.getCountry().getTaxRate());
+        } else if(trader.getCountry().getTaxType() == 'G' && taxationAmount > possibleReturnAmountBefTax) {
+            return betIsTooSmall(possibleReturnAmountBefTax, taxationAmount, trader.getCountry().getTaxType());
         }
 
+        possibleReturnAmountAfterTax = possibleReturnAmountBefTax - taxationAmount;
+
+
+        betEstimateResponseDto.setTaxRate(trader.getCountry().getTaxRate());
+        betEstimateResponseDto.setTaxAmount(trader.getCountry().getTaxAmount());
+        betEstimateResponseDto.setTaxMethod(taxationMethod);
         betEstimateResponseDto.setPossibleReturnAmountBefTax(possibleReturnAmountBefTax);
         betEstimateResponseDto.setPossibleReturnAmountAfterTax(possibleReturnAmountAfterTax);
 
-        return betEstimateResponseDto;
+        return new ResponseHandler()
+                .setData(betEstimateResponseDto)
+                .generateResponse();
+
+    }
+
+    private ResponseEntity<Object> betIsTooSmall(Double returnAmount, Double taxAmount, Character taxType){
+
+        String message = "";
+
+        Map<String, Double> map = new HashMap<String, Double>();
+
+        if (taxType == 'W'){
+            message = "Tax amount exceeds the winnings";
+            map.put("Winnings", returnAmount);
+            map.put("TotalTax", taxAmount);
+
+        } else {
+            message = "Tax amount exceeds the possible return";
+            map.put("ReturnAmount", returnAmount);
+            map.put("TotalTax", taxAmount);
+        }
+
+        return new ResponseHandler()
+            .setSuccessful(false)
+            .setStatus(HttpStatus.BAD_REQUEST)
+            .setMessage(message)
+            .setData(map)
+            .generateResponse();
 
     }
 

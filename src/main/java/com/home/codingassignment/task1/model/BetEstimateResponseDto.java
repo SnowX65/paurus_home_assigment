@@ -1,11 +1,15 @@
 package com.home.codingassignment.task1.model;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 public class BetEstimateResponseDto {
 
     private Double possibleReturnAmountBefTax;
     private Double possibleReturnAmountAfterTax;
     private Double taxRate;
     private Double taxAmount;
+    private String taxMethod;
 
     public BetEstimateResponseDto() {}
 
@@ -21,7 +25,8 @@ public class BetEstimateResponseDto {
     }
 
     public void setPossibleReturnAmountBefTax(Double possibleReturnAmountBefTax) {
-        this.possibleReturnAmountBefTax = possibleReturnAmountBefTax;
+        this.possibleReturnAmountBefTax = BigDecimal.valueOf(possibleReturnAmountBefTax).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
     }
 
     public Double getPossibleReturnAmountAfterTax() {
@@ -29,7 +34,7 @@ public class BetEstimateResponseDto {
     }
 
     public void setPossibleReturnAmountAfterTax(Double possibleReturnAmountAfterTax) {
-        this.possibleReturnAmountAfterTax = possibleReturnAmountAfterTax;
+        this.possibleReturnAmountAfterTax = BigDecimal.valueOf(possibleReturnAmountAfterTax).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     public Double getTaxRate() {
@@ -46,5 +51,13 @@ public class BetEstimateResponseDto {
 
     public void setTaxAmount(Double taxAmount) {
         this.taxAmount = taxAmount;
+    }
+
+    public String getTaxMethod() {
+        return taxMethod;
+    }
+
+    public void setTaxMethod(String taxMethod) {
+        this.taxMethod = taxMethod;
     }
 }

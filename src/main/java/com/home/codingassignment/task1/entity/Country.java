@@ -2,6 +2,9 @@ package com.home.codingassignment.task1.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Entity
 @Table(name = "country")
 public class Country {
@@ -21,7 +24,7 @@ public class Country {
     private Double taxAmount;
 
     @Column(name = "tax_type")
-    private char taxType; // W = 'winnings', G = 'general'
+    private Character taxType; // W = 'winnings', G = 'general'
 
     public Country() {
 
@@ -50,7 +53,7 @@ public class Country {
     }
 
     public Country setTaxRate(Double tax_rate) {
-        this.taxRate = tax_rate;
+        this.taxRate = tax_rate == null ? null : BigDecimal.valueOf(tax_rate).setScale(2, RoundingMode.HALF_UP).doubleValue();
         return this;
     }
 
@@ -59,15 +62,15 @@ public class Country {
     }
 
     public Country setTaxAmount(Double tax_amount) {
-        this.taxAmount = tax_amount;
+        this.taxAmount = tax_amount == null ? null : BigDecimal.valueOf(tax_amount).setScale(2, RoundingMode.HALF_UP).doubleValue();
         return this;
     }
 
-    public char getTaxType() {
+    public Character getTaxType() {
         return taxType;
     }
 
-    public Country setTaxType(char tax_type) {
+    public Country setTaxType(Character tax_type) {
         this.taxType = tax_type;
         return this;
     }

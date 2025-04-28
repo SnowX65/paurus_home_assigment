@@ -35,7 +35,7 @@ public class BetEstimateRequestDto {
     }
 
     public void setPlayedAmount(Double playedAmount) {
-        this.playedAmount = BigDecimal.valueOf(playedAmount).setScale(2, RoundingMode.HALF_UP).doubleValue();;
+        this.playedAmount = BigDecimal.valueOf(playedAmount).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     public Double getOdd() {

@@ -11,7 +11,7 @@ public class CountryDto {
     private String name;
 
     @DecimalMin(value = "0.00", inclusive = true, groups = { OnCreate.class, OnUpdate.class })
-    @DecimalMax(value = "99.00", inclusive = true, groups = { OnCreate.class, OnUpdate.class })
+    @DecimalMax(value = "0.99", inclusive = true, groups = { OnCreate.class, OnUpdate.class })
     private Double taxRate;
     private Boolean taxRateIsIncluded = false; //flag to check if the field is set in post request (required for updating, since the field can be set to null)
 
@@ -55,8 +55,11 @@ public class CountryDto {
         this.taxAmountIsIncluded = true;
     }
 
-    public char getTaxType() {
-        return taxType.charAt(0);
+    public Character getTaxType() {
+        if(this.taxType == null) {
+            return Character.MIN_VALUE;
+        }
+        return this.taxType.charAt(0);
     }
 
     public void setTaxType(String taxType) {
@@ -64,11 +67,15 @@ public class CountryDto {
         this.taxType = taxType;
     }
 
-    public Boolean getTaxRateIsIncluded() {
+    public Boolean taxRateIsIncluded() {
         return taxRateIsIncluded;
     }
 
-    public Boolean getTaxAmountIsIncluded() {
+    public Boolean taxAmountIsIncluded() {
         return taxAmountIsIncluded;
+    }
+
+    public Boolean taxTypeIsEmpty(){
+        return (this.taxType == null || this.taxType.isEmpty());
     }
 }

@@ -76,20 +76,21 @@ public class ResponseHandler {
         responseMap.put("timestamp", new Date());
         responseMap.put("successful", this.successful);
 
-        if(this.successful){
-            responseMap.put("message", this.message);
-        } else {
-            responseMap.put("error", this.message);
-
-            if (this.status == HttpStatus.OK) {
-                this.status = HttpStatus.BAD_REQUEST;
+        if (this.message != null && !this.message.isEmpty()){
+            if(this.isSuccessful()){
+                responseMap.put("message", this.message);
+            } else {
+                responseMap.put("error", this.message);
             }
+        }
+
+        if (!this.successful && this.status == HttpStatus.OK){
+            this.status = HttpStatus.BAD_REQUEST;
         }
 
         responseMap.put("status", this.status.value());
 
-
-        if(this.warnings != null){
+        if(this.warnings != null && !this.warnings.isEmpty()){
             responseMap.put("warnings", this.warnings);
         }
 
