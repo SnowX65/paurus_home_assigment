@@ -109,7 +109,7 @@ Each tax type has two methods of taxation that apply to the amount taxed by each
 
 ### DB Schema
 
-The application uses an in-memory H2 database
+The application uses a Postgres DB run in a docker container
 
 #### ALLOWED_COUNTRY_NAMES:
 - Stores a list of allowed country names.
