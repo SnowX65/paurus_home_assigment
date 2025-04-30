@@ -1,15 +1,12 @@
-version: '1'
-
 services:
-  db:
-    image: 'docker-spring-boot-postgres:latest'
-    container_name: my_postgres
+  database:
+    image: 'postgres:latest'
+    container_name: postgres-spring
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/compose-postgres
-      - SPRING_DATASOURCE_USERNAME=compose-postgres
-      - SPRING_DATASOURCE_PASSWORD=compose-postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=mypassword'
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+       - ./init/schema.sql:/docker-entrypoint-initdb.d/init.sql
